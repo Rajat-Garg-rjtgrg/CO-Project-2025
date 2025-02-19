@@ -62,7 +62,7 @@ def error_checker(rs: dict, file, labels: dict):
                     if "(" not in r[1] or ")" not in r[1] or r[1].index("(")>r[1].index(")") or r[1][0] == "(" or r[1][-1] != ")":
                         return se
                     
-                    if not r[1][:r[1].index["("]].isdigit():
+                    if not r[1][:r[1].index["("]].lstrip("-").isdigit() and r[1][:r[1].index["("]] not in labels:
                         return se
                     
                     if r[1][r[1].index["("]+1:-1] not in rs:
@@ -75,7 +75,7 @@ def error_checker(rs: dict, file, labels: dict):
                         if j not in rs:
                             return wr
                         
-                    if not r[-1].isdigit():
+                    if not r[-1].lstrip("-").isdigit() and r[-1] not in labels:
                         return se
                         
             elif itype == "S":
@@ -88,7 +88,7 @@ def error_checker(rs: dict, file, labels: dict):
                 if "(" not in r[1] or ")" not in r[1] or r[1].index("(")>r[1].index(")") or r[1][0] == "(" or r[1][-1] != ")":
                     return se
                 
-                if not r[1][:r[1].index["("]].isdigit():
+                if not r[1][:r[1].index["("]].lstrip("-").isdigit() and  r[1][:r[1].index["("]] not in labels:
                     return se
                 
                 if r[1][r[1].index["("]+1:-1] not in rs:
@@ -101,7 +101,7 @@ def error_checker(rs: dict, file, labels: dict):
                     if j not in rs:
                         return wr
                     
-                if not r[-1].isdigit():
+                if not r[-1].lstrip("-").isdigit() and r[-1] not in labels:
                     return se
                     
             elif itype == "J":
@@ -111,7 +111,7 @@ def error_checker(rs: dict, file, labels: dict):
                 if r[0] not in rs:
                     return wr
                 
-                if not r[1].isdigit():
+                if not r[1].lstrip("-").isdigit() and r[1] not in labels:
                     return se
                     
             else:
@@ -130,3 +130,5 @@ def error_checker(rs: dict, file, labels: dict):
                     for j in r:
                         if j not in rs:
                             return wr
+
+    return "pass"
