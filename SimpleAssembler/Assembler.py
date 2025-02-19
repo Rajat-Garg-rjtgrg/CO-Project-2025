@@ -36,11 +36,11 @@ instructions = []
 adr = 0
 
 for line in lines:
-    line = line.strip()
-    if not line:
+    ins = line.strip()
+    if not ins:
         continue
-    if ":" in line:
-         l, ins = line.split(":")
+    if ":" in ins:
+         l, ins = ins.split(":")
 
     # call appropriate conversion
 
@@ -53,7 +53,7 @@ with open(outputfile, "w") as o:
 
 binary = encoder.assembler(lines)
 
-virtualHalt = "0"*25 + "0110011"
+virtualHalt = "00000000000000000000000001100011"
 
 if virtualHalt in binary:
     if binary[-1]!=virtualHalt:

@@ -41,7 +41,7 @@ class riscV:
     def encode_i_type(self, instr, rd, rs1, imm):
         opcode = format(self.opcodes[instr], '07b')
         funct3 = self.funct3[instr]
-        imm1 = format(int(imm), '012b')
+        imm1 = format(int(imm) & 0xfff, '012b')
         return f"{imm1}{self.registers[rs1]}{funct3}{self.registers[rd]}{opcode}"
     def encode_s_type(self, instr, rs1, rs2, offset_base):
         opcode = format(self.opcodes[instr], '07b')
@@ -49,7 +49,7 @@ class riscV:
         offset, base = offset_base.split("(")
         base = base.strip(")")
         offset = int(offset)
-        imm = format(offset, '012b')
+        imm = format(offset & 0xfff, '012b')
         imm1 = imm[:7]
         imm2 = imm[7:]
         return f"{imm1}{self.registers[rs2]}{self.registers[base]}{funct3}{imm2}{opcode}"
@@ -64,7 +64,7 @@ class riscV:
             raise ValueError(f"Unknown label or invalid offset: {label}")
         if offset < 0:
             offset = (1 << 13) + offset      
-        imm = format(offset, '013b') 
+        imm = format(offset & 0x1fff, '013b') 
         imm12 = imm[0]      
         imm10_5 = imm[2:8]      
         imm4_1 = imm[8:12]    
@@ -78,7 +78,7 @@ class riscV:
 
         if imm < 0: imm = (1 << 21) + imm
 
-        imm = format(imm, '021b')[-21:]
+        imm = format(imm & 0x1fffff, '021b')[-21:]
 
         imm20 = imm[0]
         imm10_1 = imm[11:21]
@@ -102,8 +102,8 @@ class riscV:
             try:
                 offset, base = operands[1].split("(")
                 base = base.strip(")")
-                print(instr, operands[0], base, offset)
-                return self.encode_s_type(instr, operands[0], base, operands[1])  # Passing 4 arguments correctly
+                # print(instr, operands[0], base, offset)
+                return self.encode_s_type(instr, operands[0], base, operands[1])
             except ValueError:
                 print(f"Error: Invalid sw operand format at line {lineno}")
                 return None
