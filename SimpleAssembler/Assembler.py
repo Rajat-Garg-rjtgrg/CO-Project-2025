@@ -1,7 +1,7 @@
 from binary_encoder_1 import riscV
 from error_checker import error_checker
 
-inputFile, outputfile, answerfile = input().split()
+inputFile, outputfile = input().split()
 
 encoder = riscV()
 
@@ -74,15 +74,15 @@ with open(outputfile, "w") as g:
     g.write("\n".join(binary))
 
 
-with open(answerfile, "r") as g:
-    ansl = g.readlines()
+# with open(answerfile, "r") as g:
+#     ansl = g.readlines()
 
-for i in range(len(ansl)):
-    ansl[i] = ansl[i].strip()
-    if not ansl[i]:
-        ansl.pop(i)
+# for i in range(len(ansl)):
+#     ansl[i] = ansl[i].strip()
+#     if not ansl[i]:
+#         ansl.pop(i)
 
-if ansl == binary:
-    print("pass")
-else:
-    print("fail")
+# if ansl == binary:
+#     print("pass")
+# else:
+#     print("fail")
