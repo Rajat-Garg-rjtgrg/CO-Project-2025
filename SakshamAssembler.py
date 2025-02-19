@@ -5,7 +5,7 @@ class riscV:
             "srl":0b0110011,"or":0b0110011,  "and":0b0110011,
             "lw":0b0000011, "addi":0b0010011,"jalr":0b1100111,
             "sw":0b0100011, "beq":0b1100011, "bne":0b1100011,
-            "jal":0b1101111
+            "jal":0b1101111, "mul":0b0110011
         }
         self.registers= {
         "zero": "00000", "ra": "00001", "sp": "00010", "gp": "00011",
@@ -20,15 +20,38 @@ class riscV:
         self.funct3 = {
             "add": "000", "sub": "000", "slt": "010", "srl": "101",
             "or": "110", "and": "111", "lw": "010", "addi": "000",
-            "jalr": "000", "sw": "010", "beq": "000", "bne": "001"
+            "jalr": "000", "sw": "010", "beq": "000", "bne": "001",
+            "mul": "000"
+        }
+        self.funct7 = {
+            "add": "0000000", "sub": "0100000", "slt": "0000000",
+            "srl": "0000000", "or": "0000000", "and": "0000000",
+            "mul": "0000001"
         }
         self.labels={}
         self.current=0
+
+    def get_labels(self):
+        return self.labels
+
+    def update_labels(self, instructions):
+        for address, line in enumerate(instructions):
+            if ":" in line:
+                label = line.split(":")[0].strip()
+                self.labels[label] = (address+1) * 4
+
+    def encode_r_type(self, instr, rd, rs1, rs2):
+        opcode = format(self.opcodes[instr], '07b')
+        funct3 = self.funct3[instr]
+        funct7 = self.funct7[instr]
+        return f"{funct7}{self.registers[rs2]}{self.registers[rs1]}{funct3}{self.registers[rd]}{opcode}"
+
     def encode_i_type(self, instr, rd, rs1, imm):
         opcode = format(self.opcodes[instr], '07b')
         funct3 = self.funct3[instr]
         imm1 = format(int(imm), '012b')
         return f"{imm1}{self.registers[rs1]}{funct3}{self.registers[rd]}{opcode}"
+
     def encode_s_type(self, instr, rs1, rs2, offset_base):
         opcode = format(self.opcodes[instr], '07b')
         funct3 = self.funct3[instr]
@@ -36,12 +59,30 @@ class riscV:
         base = base.strip(")")
         offset = int(offset)
         imm = format(offset, '012b')
-        
         imm1 = imm[:7]
         imm2 = imm[7:]
         return f"{imm1}{self.registers[rs2]}{self.registers[base]}{funct3}{imm2}{opcode}"
 
-    
+    def encode_b_type(self, instr, rs1, rs2, label, pc):
+        opcode = format(self.opcodes[instr], '07b')
+        funct3 = self.funct3[instr]
+        if label in self.labels:
+            offset = self.labels[label] - pc
+        elif label.lstrip('-').isdigit():
+            offset = int(label)
+        else:
+            raise ValueError(f"Unknown label or invalid offset: {label}")
+
+        if offset < 0:
+            offset = (1 << 13) + offset
+
+        imm = format(offset, '013b')
+        imm12 = imm[0]
+        imm10_5 = imm[2:8]
+        imm4_1 = imm[8:12]
+        imm11 = imm[1]
+        return f"{imm12}{imm10_5}{self.registers[rs2]}{self.registers[rs1]}{funct3}{imm4_1}{imm11}{opcode}"
+
     def encode_j_type(self, instr, rd, label, pc):
         opcode = format(self.opcodes[instr], '07b')
         if label in self.labels: imm = self.labels[label] - pc
@@ -58,12 +99,17 @@ class riscV:
         imm19_12 = imm[1:10]
 
         return f"{imm20}{imm19_12}{imm11}{imm10_1}{self.registers[rd]}{opcode}"
-     
+
     def encode(self, instruction, lineno):
         self.current = (lineno + 1) * 4
+        if ":" in instruction:
+            instruction=instruction.split(":")[1].strip()
         parts = instruction.split()
         instr = parts[0]
         operands = [op.strip() for op in " ".join(parts[1:]).split(",")]
+
+        if instr in ["add", "sub", "slt", "srl", "or", "and", "mul"]:
+            return self.encode_r_type(instr, operands[0], operands[1], operands[2])
 
         if instr == "sw":
             if len(operands) != 2 or "(" not in operands[1] or ")" not in operands[1]:
@@ -72,53 +118,17 @@ class riscV:
             try:
                 offset, base = operands[1].split("(")
                 base = base.strip(")")
-                print(instr, operands[0], base, offset)
-                return self.encode_s_type(instr, operands[0], base, operands[1])  # Passing 4 arguments correctly
+                return self.encode_s_type(instr, operands[0], base, operands[1])
             except ValueError:
                 print(f"Error: Invalid sw operand format at line {lineno}")
                 return None
-        if instr in ["addi", "lw", "jalr"]: 
-            if len(operands) < 3 and instr != "lw":
-                print(f"Error: Missing operands for {instr} at line {lineno}")
-                return None
 
-            if instr == "lw":
-                if len(operands) != 2 or "(" not in operands[1] or ")" not in operands[1]:
-                    print(f"Error: Invalid lw format in {instruction}")
-                    return None
-                try:
-                    offset, base = operands[1].split("(")
-                    base = base.strip(")")
-                    return self.encode_i_type(instr, operands[0], base, offset)
-                except ValueError:
-                    print(f"Error: Invalid lw operand format at line {lineno}")
-                    return None
+        if instr in ["addi", "lw", "jalr"]:
             try:
                 return self.encode_i_type(instr, operands[0], operands[1], operands[2])
             except ValueError as e:
                 print(f"Error in {instr} operands at line {lineno}: {e}")
                 return None
 
-    def assembler(self,instructions):
-        binary=[]
-        asspire=[]
-        for i,j in enumerate(instructions):
-            a=self.encode(j,i)
-            if a:
-                asspire.append(a)
-        for i,j in enumerate(instructions):
-            bina=self.encode(j, i)
-            if bina:
-                binary.append(bina)
-        return binary
-
-riscv = riscV()
-# instrctions=[
-#     "lw a4,30(s3)",
-#     "jalr ra,a4,-03",
-#     "addi s4,s3,1",
-#     "sw s4,23(s4)"
-# ]
-# binary_output = riscv.assembler(instrctions)
-# for line in binary_output:
-#      print(line)
+        elif instr in ["beq", "bne"]:
+            return self.encode_b_type(instr, operands[0], operands[1], operands[2], self.current)
