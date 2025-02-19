@@ -43,16 +43,16 @@ class riscV:
         funct3 = self.funct3[instr]
         imm1 = format(int(imm) & 0xfff, '012b')
         return f"{imm1}{self.registers[rs1]}{funct3}{self.registers[rd]}{opcode}"
-    def encode_s_type(self, instr, rs1, rs2, offset_base):
+    def encode_s_type(self, instr, rs2, rs1, offset_base):
         opcode = format(self.opcodes[instr], '07b')
         funct3 = self.funct3[instr]
         offset, base = offset_base.split("(")
         base = base.strip(")")
         offset = int(offset)
         imm = format(offset & 0xfff, '012b')
-        imm1 = imm[:7]
-        imm2 = imm[7:]
-        return f"{imm1}{self.registers[rs2]}{self.registers[base]}{funct3}{imm2}{opcode}"
+        imm1 = imm[0:7]
+        imm2 = imm[7:12]
+        return f"{imm1}{self.registers[rs2]}{self.registers[rs1]}{funct3}{imm2}{opcode}"
     def encode_b_type(self, instr, rs1, rs2, label, pc):
         opcode = format(self.opcodes[instr], '07b')
         funct3 = self.funct3[instr]
@@ -77,17 +77,16 @@ class riscV:
         else: raise ValueError(f"Unknown label or invalid offset: {label}")
 
         if imm < 0: imm = (1 << 21) + imm
-
-        imm = format(imm & 0x1fffff, '021b')[-21:]
+        imm = format(imm & 0x1fffff, '021b')
 
         imm20 = imm[0]
-        imm10_1 = imm[11:21]
-        imm11 = imm[10]
-        imm19_12 = imm[1:10]
+        imm10_1 = imm[10:20]
+        imm11 = imm[9]
+        imm19_12 = imm[1:9]
 
-        return f"{imm20}{imm19_12}{imm11}{imm10_1}{self.registers[rd]}{opcode}"
+        return f"{imm20}{imm10_1}{imm11}{imm19_12}{self.registers[rd]}{opcode}"
     def encode(self, instruction, lineno):
-        self.current = (lineno + 1) * 4
+        self.current = (lineno) * 4
         if ":" in instruction:
             instruction=instruction.split(":")[1].strip()
         parts = instruction.split()
@@ -130,6 +129,8 @@ class riscV:
                 return None
         elif instr in ["beq", "bne"]:
             return self.encode_b_type(instr, operands[0], operands[1], operands[2], self.current)
+        elif instr == "jal":
+            return self.encode_j_type(instr,operands[0],operands[1],self.current)
 
     def assembler(self,instructions):
         binary=[]

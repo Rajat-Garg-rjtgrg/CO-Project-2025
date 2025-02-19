@@ -1,7 +1,7 @@
 from binary_encoder_1 import riscV
 from error_checker import error_checker
 
-inputFile, outputfile = input().split()
+inputFile, outputfile, answerfile = input().split()
 
 encoder = riscV()
 
@@ -25,11 +25,16 @@ for line in lines:
             g.write("repeated lables")
             quit()
     labels[label] = adr
-    adr+=1
+    adr+=4
 
 encoder.labels = labels
 
-error_checker(encoder.registers, lines, labels)
+msg = error_checker(encoder.registers, lines, labels)
+
+if msg != "pass":
+    with open(outputfile, "w") as g:
+        g.write(msg)
+        quit()
 
 
 instructions = []
@@ -67,3 +72,17 @@ else:
 
 with open(outputfile, "w") as g:
     g.write("\n".join(binary))
+
+
+with open(answerfile, "r") as g:
+    ansl = g.readlines()
+
+for i in range(len(ansl)):
+    ansl[i] = ansl[i].strip()
+    if not ansl[i]:
+        ansl.pop(i)
+
+if ansl == binary:
+    print("pass")
+else:
+    print("fail")

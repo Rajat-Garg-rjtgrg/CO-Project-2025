@@ -1,7 +1,7 @@
 def error_checker(rs: dict, file, labels: dict):
 
     isa = {
-        "R": ["add","sub","stl","srl","or","and"],
+        "R": ["add","sub","slt","srl","or","and"],
         "I": ["lw","addi","jalr"],
         "S": ["sw"],
         "J": ["jal"],
@@ -15,6 +15,7 @@ def error_checker(rs: dict, file, labels: dict):
 
         se = f"Syntax Error line {l}"
         wr = f"Syntax error: Wrong register name line {l}"
+        wl = f"Label not present {l}"
 
         i = i.strip()
         if not i:
@@ -33,6 +34,7 @@ def error_checker(rs: dict, file, labels: dict):
             else:
                 return se
         r = r.split(",")
+
         itype = "x"
 
         for t,lst in isa.items():
@@ -63,7 +65,7 @@ def error_checker(rs: dict, file, labels: dict):
                     return se
                 
                 if not r[1][:r[1].index("(")].lstrip("-").isdigit() and r[1][:r[1].index("(")] not in labels:
-                    return se
+                    return wl
                 
                 if r[1][r[1].index("(")+1:-1] not in rs:
                     return wr
@@ -76,7 +78,7 @@ def error_checker(rs: dict, file, labels: dict):
                         return wr
                     
                 if not r[-1].lstrip("-").isdigit() and r[-1] not in labels:
-                    return se
+                    return wl
                     
         elif itype == "S":
             if len(r) != 2:
@@ -89,7 +91,7 @@ def error_checker(rs: dict, file, labels: dict):
                 return se
             
             if not r[1][:r[1].index("(")].lstrip("-").isdigit() and  r[1][:r[1].index("(")] not in labels:
-                return se
+                return wl
             
             if r[1][r[1].index("(")+1:-1] not in rs:
                 return wr
@@ -102,7 +104,7 @@ def error_checker(rs: dict, file, labels: dict):
                     return wr
                 
             if not r[-1].lstrip("-").isdigit() and r[-1] not in labels:
-                return se
+                return wl
                 
         elif itype == "J":
             if len(r)!=2:
@@ -112,7 +114,7 @@ def error_checker(rs: dict, file, labels: dict):
                 return wr
             
             if not r[1].lstrip("-").isdigit() and r[1] not in labels:
-                return se
+                return wl
                 
         else:
             if ins == "halt" or ins == "rst":
@@ -130,5 +132,6 @@ def error_checker(rs: dict, file, labels: dict):
                 for j in r:
                     if j not in rs:
                         return wr
+        l+=1
 
     return "pass"
