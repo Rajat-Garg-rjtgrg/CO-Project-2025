@@ -65,7 +65,7 @@ def error_checker(rs: dict, file, labels: dict):
                     return se
                 
                 if not r[1][:r[1].index("(")].lstrip("-").isdigit() and r[1][:r[1].index("(")] not in labels:
-                    return wl
+                    return se
                 
                 if r[1][r[1].index("(")+1:-1] not in rs:
                     return wr
@@ -91,7 +91,7 @@ def error_checker(rs: dict, file, labels: dict):
                 return se
             
             if not r[1][:r[1].index("(")].lstrip("-").isdigit() and  r[1][:r[1].index("(")] not in labels:
-                return wl
+                return se
             
             if r[1][r[1].index("(")+1:-1] not in rs:
                 return wr
